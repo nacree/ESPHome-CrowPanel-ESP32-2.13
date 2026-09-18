@@ -18,6 +18,8 @@ class CrowPanelEPaper : public display::DisplayBuffer,
   void set_busy_pin(GPIOPin *busy_pin) { this->busy_pin_ = busy_pin; }
   void set_power_pin(GPIOPin *power_pin) { this->power_pin_ = power_pin; }
   void set_full_update_every(uint32_t full_update_every) { this->full_update_every_ = full_update_every; }
+  void set_mirror_x(bool mirror_x) { this->mirror_x_ = mirror_x; }
+  void set_mirror_y(bool mirror_y) { this->mirror_y_ = mirror_y; }
 
   void setup() override;
   void dump_config() override;
@@ -59,6 +61,7 @@ class CrowPanelEPaper : public display::DisplayBuffer,
   void write_lut_(const uint8_t *r20, const uint8_t *r21, const uint8_t *r22, const uint8_t *r23, const uint8_t *r24);
 
   static constexpr int WIDTH = 128;  // 122 visible columns, padded to a whole byte
+  static constexpr int VISIBLE_WIDTH = 122;
   static constexpr int HEIGHT = 250;
   static constexpr size_t BUFFER_LENGTH = WIDTH * HEIGHT / 8;
 
@@ -67,6 +70,8 @@ class CrowPanelEPaper : public display::DisplayBuffer,
   GPIOPin *busy_pin_{nullptr};
   GPIOPin *power_pin_{nullptr};
 
+  bool mirror_x_{false};
+  bool mirror_y_{false};
   uint32_t full_update_every_{1};
   uint32_t at_update_{0};
   // The controller needs the previous image in RAM 0x10 to compute a partial refresh.

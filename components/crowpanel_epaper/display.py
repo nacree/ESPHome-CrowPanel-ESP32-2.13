@@ -15,6 +15,8 @@ CODEOWNERS = ["@local"]
 DEPENDENCIES = ["spi"]
 
 CONF_POWER_PIN = "power_pin"
+CONF_MIRROR_X = "mirror_x"
+CONF_MIRROR_Y = "mirror_y"
 
 crowpanel_epaper_ns = cg.esphome_ns.namespace("crowpanel_epaper")
 CrowPanelEPaper = crowpanel_epaper_ns.class_(
@@ -30,6 +32,8 @@ CONFIG_SCHEMA = (
             cv.Optional(CONF_BUSY_PIN): pins.gpio_input_pin_schema,
             cv.Optional(CONF_POWER_PIN): pins.gpio_output_pin_schema,
             cv.Optional(CONF_FULL_UPDATE_EVERY, default=1): cv.uint32_t,
+            cv.Optional(CONF_MIRROR_X, default=False): cv.boolean,
+            cv.Optional(CONF_MIRROR_Y, default=False): cv.boolean,
         }
     )
     .extend(cv.polling_component_schema("60s"))
@@ -58,6 +62,8 @@ async def to_code(config):
         cg.add(var.set_power_pin(power))
 
     cg.add(var.set_full_update_every(config[CONF_FULL_UPDATE_EVERY]))
+    cg.add(var.set_mirror_x(config[CONF_MIRROR_X]))
+    cg.add(var.set_mirror_y(config[CONF_MIRROR_Y]))
 
     if CONF_LAMBDA in config:
         lambda_ = await cg.process_lambda(

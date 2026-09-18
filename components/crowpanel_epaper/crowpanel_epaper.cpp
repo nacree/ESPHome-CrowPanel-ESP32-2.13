@@ -77,6 +77,8 @@ void CrowPanelEPaper::dump_config() {
   LOG_PIN("  Reset Pin: ", this->reset_pin_);
   LOG_PIN("  Busy Pin: ", this->busy_pin_);
   LOG_PIN("  Power Pin: ", this->power_pin_);
+  ESP_LOGCONFIG(TAG, "  Mirror X: %s", YESNO(this->mirror_x_));
+  ESP_LOGCONFIG(TAG, "  Mirror Y: %s", YESNO(this->mirror_y_));
   ESP_LOGCONFIG(TAG, "  Full update every: %" PRIu32, this->full_update_every_);
   LOG_UPDATE_INTERVAL(this);
 }
@@ -88,6 +90,13 @@ void CrowPanelEPaper::fill(Color color) {
 
 void CrowPanelEPaper::draw_absolute_pixel_internal(int x, int y, Color color) {
   if (x >= WIDTH || y >= HEIGHT || x < 0 || y < 0)
+    return;
+
+  if (this->mirror_x_)
+    x = VISIBLE_WIDTH - x - 1;
+  if (this->mirror_y_)
+    y = HEIGHT - y - 1;
+  if (x < 0)
     return;
 
   const uint32_t pos = (x + y * WIDTH) / 8u;
