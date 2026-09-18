@@ -1,0 +1,96 @@
+esphome:
+  name: crowpanel
+  friendly_name: CrowPanel 2.13
+
+external_components:
+  - source:
+      type: local
+      path: components
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: arduino
+
+logger:
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "Crowpanel Fallback Hotspot"
+    password: !secret ap_password
+
+captive_portal:
+
+spi:
+  clk_pin: GPIO12
+  mosi_pin: GPIO11
+
+font:
+  - file: "gfonts://Roboto"
+    id: my_font
+    size: 18
+
+display:
+  - platform: crowpanel_epaper
+    id: epaper
+    cs_pin: GPIO14
+    dc_pin: GPIO13
+    reset_pin: GPIO10
+    busy_pin: GPIO9
+    power_pin: GPIO7
+    rotation: 270
+    full_update_every: 1
+    update_interval: 60s
+    lambda: |-
+      it.print(5, 5, id(my_font), "HELLO");
+      it.print(5, 30, id(my_font), "CrowPanel");
+      it.print(5, 55, id(my_font), "122 x 250");
+
+# The board's front panel buttons and the power LED.
+binary_sensor:
+  - platform: gpio
+    name: Menu
+    pin:
+      number: GPIO2
+      inverted: true
+  - platform: gpio
+    name: Exit
+    pin:
+      number: GPIO1
+      inverted: true
+  - platform: gpio
+    name: Up
+    pin:
+      number: GPIO6
+      inverted: true
+  - platform: gpio
+    name: Down
+    pin:
+      number: GPIO4
+      inverted: true
+  - platform: gpio
+    name: Confirm
+    pin:
+      number: GPIO5
+      inverted: true
+
+output:
+  - platform: gpio
+    id: power_led
+    pin: GPIO19
+
+light:
+  - platform: binary
+    name: Power LED
+    output: power_led
+    restore_mode: ALWAYS_ON
