@@ -57,14 +57,12 @@ void CrowPanelEPaper::setup() {
     return;
   }
 
-  if (this->full_update_every_ > 1) {
-    this->previous_buffer_ = new (std::nothrow) uint8_t[BUFFER_LENGTH];  // NOLINT
-    if (this->previous_buffer_ == nullptr) {
-      ESP_LOGW(TAG, "Could not allocate partial refresh buffer, falling back to full refreshes");
-      this->full_update_every_ = 1;
-    } else {
-      memset(this->previous_buffer_, 0xFF, BUFFER_LENGTH);
-    }
+  this->previous_buffer_ = new (std::nothrow) uint8_t[BUFFER_LENGTH];  // NOLINT
+  if (this->previous_buffer_ == nullptr) {
+    ESP_LOGW(TAG, "Could not allocate previous frame buffer, falling back to full refreshes");
+    this->full_update_every_ = 1;
+  } else {
+    memset(this->previous_buffer_, 0xFF, BUFFER_LENGTH);
   }
 
   this->clear_screen();
@@ -126,8 +124,12 @@ void CrowPanelEPaper::display() {
   this->command_(CMD_VCOM_AND_DATA_INTERVAL);
   this->data_(0xD7);
 
-  if (!full_update) {
+  // The waveform drives every pixel from both frames, and the controller's RAM is undefined after
+  // the reset, so the previous frame has to be written even for a full refresh.
+  if (this->previous_buffer_ != nullptr) {
     this->write_frame_(CMD_DATA_START_TRANSMISSION_1, this->previous_buffer_);
+  } else {
+    this->write_constant_frame_(CMD_DATA_START_TRANSMISSION_1, 0xFF);
   }
   this->write_frame_(CMD_DATA_START_TRANSMISSION_2, this->buffer_);
 
