@@ -17,6 +17,12 @@ logger:
 api:
   encryption:
     key: !secret api_encryption_key
+  # Draw as soon as Home Assistant has handed over the subscribed values, rather than waiting out
+  # the first update_interval.
+  on_client_connected:
+    then:
+      - delay: 2s
+      - component.update: epaper
 
 ota:
   - platform: esphome
@@ -37,8 +43,30 @@ spi:
 
 font:
   - file: "gfonts://Roboto"
-    id: my_font
-    size: 18
+    id: font_small
+    size: 12
+  - file: "gfonts://Roboto"
+    id: font_medium
+    size: 17
+  - file: "gfonts://Roboto@500"
+    id: font_hero
+    size: 48
+
+# Values pulled from Home Assistant over the native API. Replace the entity IDs with your own.
+time:
+  - platform: homeassistant
+    id: ha_time
+
+sensor:
+  - platform: homeassistant
+    id: outdoor_temperature
+    entity_id: sensor.outdoor_temperature
+  - platform: homeassistant
+    id: outdoor_humidity
+    entity_id: sensor.outdoor_humidity
+  - platform: homeassistant
+    id: indoor_temperature
+    entity_id: sensor.living_room_temperature
 
 display:
   - platform: crowpanel_epaper
@@ -49,12 +77,38 @@ display:
     busy_pin: GPIO9
     power_pin: GPIO7
     rotation: 270
+    mirror_y: true
     full_update_every: 1
-    update_interval: 60s
+    update_interval: 5min
     lambda: |-
-      it.print(5, 5, id(my_font), "HELLO");
-      it.print(5, 30, id(my_font), "CrowPanel");
-      it.print(5, 55, id(my_font), "122 x 250");
+      // Canvas is 250 x 122 with rotation: 270. Outdoor temperature fills the left two thirds,
+      // the two secondary values are stacked in the right column.
+      it.print(4, 2, id(font_small), "Outdoor");
+      if (id(ha_time).now().is_valid()) {
+        it.strftime(246, 2, id(font_small), TextAlign::TOP_RIGHT, "%a %H:%M", id(ha_time).now());
+      }
+      it.line(0, 19, 250, 19);
+      it.line(158, 19, 158, 121);
+
+      if (id(outdoor_temperature).has_state()) {
+        it.printf(79, 70, id(font_hero), TextAlign::CENTER, "%.1f°", id(outdoor_temperature).state);
+      } else {
+        it.print(79, 70, id(font_hero), TextAlign::CENTER, "--.-°");
+      }
+
+      it.print(164, 28, id(font_small), "Humidity");
+      if (id(outdoor_humidity).has_state()) {
+        it.printf(244, 43, id(font_medium), TextAlign::TOP_RIGHT, "%.0f%%", id(outdoor_humidity).state);
+      } else {
+        it.print(244, 43, id(font_medium), TextAlign::TOP_RIGHT, "--%");
+      }
+
+      it.print(164, 70, id(font_small), "Indoor");
+      if (id(indoor_temperature).has_state()) {
+        it.printf(244, 85, id(font_medium), TextAlign::TOP_RIGHT, "%.1f°", id(indoor_temperature).state);
+      } else {
+        it.print(244, 85, id(font_medium), TextAlign::TOP_RIGHT, "--.-°");
+      }
 
 # The board's front panel buttons and the power LED.
 binary_sensor:
